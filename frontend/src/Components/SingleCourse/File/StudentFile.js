@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from "react";
 import Axios from "axios";
-import file from '../../../assets/file.svg';
+import file from "../../../assets/file.svg";
 
 function StudentFile({ id }) {
   const [uploadedFile, setUploadedFile] = useState([]);
   useEffect(() => {
-    Axios.post("http://localhost:3002/getFile", { courseId: id }).then(
-      (res) => {
-        setUploadedFile(res.data);
-      }
-    );
+    Axios.get(`http://localhost:3002/getFile`, {
+      params: {
+        courseId: id,
+      },
+    })
+      .then((res) => {
+        console.log(res);
+        setUploadedFile(res.data.reverse());
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   }, [id]);
   return (
     <main>

@@ -3,16 +3,16 @@ import "./Help.css";
 import { useGlobalContext } from "../../context";
 
 function Help() {
-  const {info}=useGlobalContext();
+  const { info } = useGlobalContext();
   return (
     <div>
       <header className="helpHeader">
         <h2>Help</h2>
         <div className="call-help">
-          <a href="tel:+91 6353857230">
+          <a href="tel:+91 9876543210">
             <i className="bi bi-telephone-fill"> Contact Us</i>
           </a>
-          <a href="mailto:singhabhinav020@gamil.com">
+          <a href="mailto:aman@gmail.com">
             <i className="bi bi-envelope-fill"> Mail us</i>
           </a>
         </div>
