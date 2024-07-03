@@ -6,18 +6,27 @@ function AddnewCourse() {
   const [desc, setDesc] = useState("");
   const [prereq, setPrereq] = useState("");
   const info = JSON.parse(localStorage.getItem("info"));
+  const token = localStorage.getItem("token");
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (courseName === "" || credit === "" || desc === "" || prereq === "") {
       alert("All fields required");
     } else {
-      await Axios.post("http://localhost:3002/publishCourse", {
-        courseName,
-        credit,
-        desc,
-        prereq,
-        id: info.id,
-      }).then((res) => {
+      await Axios.post(
+        "http://localhost:3002/publishCourse",
+        {
+          courseName,
+          credit,
+          desc,
+          prereq,
+          id: info.id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
         alert("course is succesfully published");
       });
     }

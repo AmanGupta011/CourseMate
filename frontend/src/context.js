@@ -5,6 +5,7 @@ const AppContext = React.createContext();
 
 const AppProvider = ({ children }) => {
   const info = JSON.parse(localStorage.getItem("info"));
+  const token = localStorage.getItem("token");
   console.log(info);
   //profile
   const [name, setName] = useState("");
@@ -12,14 +13,20 @@ const AppProvider = ({ children }) => {
   const [image, setImage] = useState(null);
   const [cflag, setcflag] = useState(false);
   useEffect(() => {
-    Axios.post("http://localhost:3002/getProfile", { id: info.id }).then(
-      (res) => {
-        setName(res.data[0].name);
-        if (res.data[0].photo) setImage(res.data[0].photo);
-        else setImage(user);
-        setContact(res.data[0].contact);
+    Axios.post(
+      "http://localhost:3002/getProfile",
+      { id: info.id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    );
+    ).then((res) => {
+      setName(res.data[0].name);
+      if (res.data[0].photo) setImage(res.data[0].photo);
+      else setImage(user);
+      setContact(res.data[0].contact);
+    });
   }, [info.id]);
 
   //courses
@@ -45,7 +52,15 @@ const AppProvider = ({ children }) => {
   const [myCourseList, setMyCourseList] = useState([]);
   useEffect(() => {
     setLoading(true);
-    Axios.post("http://localhost:3002/getMyCourses", { id: info.id })
+    Axios.post(
+      "http://localhost:3002/getMyCourses",
+      { id: info.id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
       .then((res) => {
         // console.log(res.data);
         const myNewCourses = [];
@@ -67,7 +82,15 @@ const AppProvider = ({ children }) => {
   const [teacherCourseList, setTeacherCourseList] = useState([]);
   useEffect(() => {
     setLoading(true);
-    Axios.post("http://localhost:3002/getTeacherCourse", { id: info.id })
+    Axios.post(
+      "http://localhost:3002/getTeacherCourse",
+      { id: info.id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
       .then((res) => {
         setTeacherCourseList(res.data);
         setLoading(false);

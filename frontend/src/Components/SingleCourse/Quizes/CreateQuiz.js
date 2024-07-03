@@ -9,18 +9,27 @@ function CreateQuiz() {
   const [duration, setDuration] = useState(Date.now().timestamp);
   const [quizId, setQuizId] = useState(0);
   const [saved, setSaved] = useState(false);
+  const token = localStorage.getItem("token");
   const handleCreateQuiz = (e) => {
     e.preventDefault();
     if (title === "" || instruction === "" || topic === "") {
       alert("All fields are necessary");
     } else {
-      Axios.post("http://localhost:3002/createQuizInfo", {
-        id,
-        title,
-        instruction,
-        topic,
-        duration,
-      }).then((res) => {
+      Axios.post(
+        "http://localhost:3002/createQuizInfo",
+        {
+          id,
+          title,
+          instruction,
+          topic,
+          duration,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
         setQuizId(res.data[0].id);
         console.log(quizId);
         setSaved(true);

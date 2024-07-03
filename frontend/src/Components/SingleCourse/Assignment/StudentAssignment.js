@@ -3,34 +3,53 @@ import Axios from "axios";
 import { Link } from "react-router-dom";
 import { useGlobalContext } from "../../../context";
 import Loading from "../../../Loading";
-import assignmentImg from "../../../assets/assignment.png"
+import assignmentImg from "../../../assets/assignment.png";
 
-function StudentAssignment({id}) {
+function StudentAssignment({ id }) {
   const { info } = useGlobalContext();
   const [loading1, setLoading1] = useState(true);
   const [loading2, setLoading2] = useState(true);
   const [assignmentList, setAssignmentList] = useState([]);
-  const [unAttemptedAssignmentList, setUnAttemptedAssignmentList] = useState([]);
+  const [unAttemptedAssignmentList, setUnAttemptedAssignmentList] = useState(
+    []
+  );
   const [attemptedAssignmentList, setAttemptedAssignmentList] = useState([]);
+  const token = localStorage.getItem("token");
   useEffect(() => {
-      setLoading1(true);
-      Axios.post("http://localhost:3002/getAttemptedAssignments", {
+    setLoading1(true);
+    Axios.post(
+      "http://localhost:3002/getAttemptedAssignments",
+      {
         id,
         studentId: info.id,
-      }).then((res) => {
-        console.log(res.data[0]);
-        setAttemptedAssignmentList(res.data[0].reverse());
-        setLoading1(false);
-      });
-      setLoading2(true);
-      Axios.post("http://localhost:3002/getUnAttemptedAssignments", {
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
+      console.log(res.data[0]);
+      setAttemptedAssignmentList(res.data[0].reverse());
+      setLoading1(false);
+    });
+    setLoading2(true);
+    Axios.post(
+      "http://localhost:3002/getUnAttemptedAssignments",
+      {
         id,
         studentId: info.id,
-      }).then((res) => {
-        console.log(res.data[0]);
-        setUnAttemptedAssignmentList(res.data[0].reverse());
-        setLoading2(false);
-      });
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
+      console.log(res.data[0]);
+      setUnAttemptedAssignmentList(res.data[0].reverse());
+      setLoading2(false);
+    });
   }, []);
 
   if (loading1 && loading2) {
@@ -91,7 +110,7 @@ const SingleAssignment = ({
   title,
   topic,
   deadline,
-  flag
+  flag,
 }) => {
   const time = deadline.slice(0, 10) + ", " + deadline.slice(-5) + " hr";
   return (
@@ -120,7 +139,7 @@ const SingleAssignment = ({
             },
           }}
         >
-          {flag?"View Your Work":"Attempt"}
+          {flag ? "View Your Work" : "Attempt"}
         </Link>
       </button>
     </div>

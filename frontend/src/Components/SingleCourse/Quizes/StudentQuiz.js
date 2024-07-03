@@ -6,35 +6,52 @@ import { useGlobalContext } from "../../../context";
 import quizImg from "../../../assets/quiz.png";
 
 function StudentQuiz({ id }) {
-  const {info}=useGlobalContext();
+  const { info } = useGlobalContext();
   const [loading1, setLoading1] = useState(true);
   const [loading2, setLoading2] = useState(true);
   const [unattemptedQuizList, setUnattemptedQuizList] = useState([]);
   const [attemptedQuizList, setAttemptedQuizList] = useState([]);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     setLoading1(true);
-    Axios.post("http://localhost:3002/getAttemptedQuizes", {
-      id,
-      studentId: info.id,
-    }).then((res) => {
+    Axios.post(
+      "http://localhost:3002/getAttemptedQuizes",
+      {
+        id,
+        studentId: info.id,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       console.log(res.data[0]);
       setAttemptedQuizList(res.data[0].reverse());
       setLoading1(false);
     });
     setLoading2(true);
-    Axios.post("http://localhost:3002/getUnattemptedQuizes", {
-      id,
-      studentId: info.id,
-    }).then((res) => {
+    Axios.post(
+      "http://localhost:3002/getUnattemptedQuizes",
+      {
+        id,
+        studentId: info.id,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       console.log(res.data[0]);
       setUnattemptedQuizList(res.data[0].reverse());
       setLoading2(false);
     });
   }, []);
-  
-  if(loading1 && loading2){
-    return <Loading/>
+
+  if (loading1 && loading2) {
+    return <Loading />;
   }
   return (
     <div className="quiz">
@@ -68,7 +85,7 @@ function StudentQuiz({ id }) {
       )}
     </div>
   );
-};
+}
 
 const SingleQuiz = ({
   quizId,
@@ -81,7 +98,7 @@ const SingleQuiz = ({
   totalMarks,
   flag,
   studentId,
-  score
+  score,
 }) => {
   return (
     <div className="ques-container">
@@ -89,7 +106,11 @@ const SingleQuiz = ({
       {/* <p>{instruction}</p> */}
       <h4>Duration : {duration}</h4>
       <h4>Topic: {topic}</h4>
-      {flag && <h4>Your score : {score}/{totalMarks}</h4>}
+      {flag && (
+        <h4>
+          Your score : {score}/{totalMarks}
+        </h4>
+      )}
       <div className="quiz-stats">
         <div>
           <h5>Total questions</h5>

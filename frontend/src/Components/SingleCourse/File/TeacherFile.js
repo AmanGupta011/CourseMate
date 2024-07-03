@@ -5,6 +5,7 @@ import fileImg from "../../../assets/file.svg";
 function TeacherFile({ id }) {
   const [file, setFile] = useState();
   const [fileName, setFileName] = useState("");
+  const token = localStorage.getItem("token");
   // const [filePreview,setFilePreview]=useState(null);
   const saveFile = (e) => {
     setFile(e.target.files[0]);
@@ -21,11 +22,13 @@ function TeacherFile({ id }) {
       alert("Upload a file first");
     } else {
       try {
-        await Axios.post("http://localhost:3002/uploadFile", formData).then(
-          (res) => {
-            alert("File has been successfuly uploaded!");
-          }
-        );
+        await Axios.post("http://localhost:3002/uploadFile", formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).then((res) => {
+          alert("File has been successfuly uploaded!");
+        });
         getUploadedFile();
       } catch (ex) {
         console.log(ex);

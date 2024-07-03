@@ -7,7 +7,7 @@ import Axios from "axios";
 import { color } from "../Color";
 
 function CourseList() {
-  const { loading, courses, myCoursesId,setcflag,cflag} = useGlobalContext();
+  const { loading, courses, myCoursesId, setcflag, cflag } = useGlobalContext();
   const [load, setLoad] = React.useState(true);
   React.useEffect(() => {
     setLoad(true);
@@ -29,7 +29,14 @@ function CourseList() {
     <section className="section">
       <div className="card-center">
         {courses.map((course) => {
-          return <Course key={course.courseId} {...course} cflag={cflag} setcflag={setcflag}/>;
+          return (
+            <Course
+              key={course.courseId}
+              {...course}
+              cflag={cflag}
+              setcflag={setcflag}
+            />
+          );
         })}
       </div>
     </section>
@@ -50,16 +57,25 @@ const Course = ({
 }) => {
   const mod = color.length;
   const { info } = useGlobalContext();
+  const token = localStorage.getItem("token");
   let image = user;
   if (photo) image = photo;
 
   const enrollMeInCourse = () => {
     if (status === beforeEnrolment) {
-      Axios.post("http://localhost:3002/enrollMe", {
-        studentId: info.id,
-        courseId: courseId,
-        status: "Enrolled",
-      }).then((res) => {
+      Axios.post(
+        "http://localhost:3002/enrollMe",
+        {
+          studentId: info.id,
+          courseId: courseId,
+          status: "Enrolled",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
         alert(res.data);
         // const myNewCourses = myCoursesId;
         // var low=0,high=myNewCourses.length;

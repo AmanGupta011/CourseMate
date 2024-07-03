@@ -3,13 +3,22 @@ import Axios from "axios";
 import { Link } from "react-router-dom";
 
 function TeacherAssignment({ id }) {
+  const token = localStorage.getItem("token");
   function getAssignments() {
     setDeadline("");
     setTopic("");
     setTitle("");
     setFile("");
     setFileName("");
-    Axios.post("http://localhost:3002/getAssignments", { id }).then((res) => {
+    Axios.post(
+      "http://localhost:3002/getAssignments",
+      { id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       setAssignmentList(res.data.reverse());
     });
   }
@@ -33,10 +42,11 @@ function TeacherAssignment({ id }) {
       alert("All fields are necessary");
     } else {
       try {
-        await Axios.post(
-          "http://localhost:3002/uploadAssignment",
-          formData
-        ).then(async (res) => {
+        await Axios.post("http://localhost:3002/uploadAssignment", formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).then(async (res) => {
           await getAssignments();
         });
       } catch (ex) {

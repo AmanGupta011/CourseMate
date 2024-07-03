@@ -1,42 +1,59 @@
 import React, { useState, useEffect } from "react";
-import { useParams} from "react-router-dom";
+import { useParams } from "react-router-dom";
 import Loading from "../../../Loading";
 import Axios from "axios";
 
 function ViewScore() {
   const { id, quizId, studentId } = useParams();
-  const [loading,setLoading]=useState(true);
-  const [responseList,setResponseList]=useState([]);
-  const [quizStat,setQuizStat]=useState({});
-  useEffect(()=>{
+  const [loading, setLoading] = useState(true);
+  const [responseList, setResponseList] = useState([]);
+  const [quizStat, setQuizStat] = useState({});
+  const token = localStorage.getItem("token");
+  useEffect(() => {
     setLoading(true);
-    Axios.post("http://localhost:3002/getScoreAndResponse", {
-      studentId,
-      quizId,
-    })
+    Axios.post(
+      "http://localhost:3002/getScoreAndResponse",
+      {
+        studentId,
+        quizId,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
       .then((res) => {
         console.log(res.data[0]);
         setResponseList(res.data[0]);
       })
       .catch((err) => {
-        alert(err);;
+        alert(err);
       });
-    Axios.post("http://localhost:3002/getGrade", { studentId, quizId }).then(
-      (res) => {
+    Axios.post(
+      "http://localhost:3002/getGrade",
+      { studentId, quizId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+      .then((res) => {
         console.log(res.data[0][0]);
         setQuizStat(res.data[0][0]);
         setLoading(false);
-      }
-    ).catch((err)=>{
-      alert(err);
-      setLoading(false);
-    });
-  },[quizId, studentId]);
+      })
+      .catch((err) => {
+        alert(err);
+        setLoading(false);
+      });
+  }, [quizId, studentId]);
 
-  if(loading){
-    return <Loading/>
+  if (loading) {
+    return <Loading />;
   }
-  
+
   return (
     <div>
       <h3>{quizStat.title}</h3>
@@ -46,12 +63,12 @@ function ViewScore() {
       <h3>
         Your score : {quizStat.score}/{quizStat.totalMarks}
       </h3>
-      <br/>
-      {
-        responseList.map((responseVal,index)=>{
-          return (<Answer key={responseVal.questionId}{...responseVal} num={index} />);
-        })
-      }
+      <br />
+      {responseList.map((responseVal, index) => {
+        return (
+          <Answer key={responseVal.questionId} {...responseVal} num={index} />
+        );
+      })}
     </div>
   );
 }
@@ -70,22 +87,21 @@ const Answer = ({
   opt3,
   opt4,
 }) => {
-  
   return (
     <main>
       <div className="ques-box">
         <div className="ques-header">
           <div className="ques-number">Question {num + 1}</div>
-            <div className="kept-marks">
-              {marks !== maxScore && (
-                <i className="bi bi-x" style={{ color: "red" }}></i>
-              )}
-              {marks === maxScore && (
-                <i className="bi bi-check2" style={{ color: "green" }}></i>
-              )}
-              <div>
-                {marks}/{maxScore}
-              </div>
+          <div className="kept-marks">
+            {marks !== maxScore && (
+              <i className="bi bi-x" style={{ color: "red" }}></i>
+            )}
+            {marks === maxScore && (
+              <i className="bi bi-check2" style={{ color: "green" }}></i>
+            )}
+            <div>
+              {marks}/{maxScore}
+            </div>
           </div>
         </div>
         <div style={{ fontSize: "1.3rem" }}>{questionName}</div>

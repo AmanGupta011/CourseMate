@@ -14,13 +14,20 @@ function AnswerDoubt() {
   }
   const [answer, setAnswer] = useState("");
   const [answerList, setAnswerList] = useState([]);
+  const token = localStorage.getItem("token");
   const getAllAnswer = () => {
-    Axios.post("http://localhost:3002/getDoubtAnswers", { doubtId }).then(
-      (res) => {
-        console.log(res.data[0]);
-        setAnswerList(res.data[0]);
+    Axios.post(
+      "http://localhost:3002/getDoubtAnswers",
+      { doubtId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    );
+    ).then((res) => {
+      console.log(res.data[0]);
+      setAnswerList(res.data[0]);
+    });
   };
   useEffect(() => {
     getAllAnswer();
@@ -31,11 +38,19 @@ function AnswerDoubt() {
     if (answer === "") {
       alert("Anser the doubt first");
     } else {
-      await Axios.post("http://localhost:3002/addDoubtAnswer", {
-        doubt_ans: answer,
-        doubtId,
-        replierId: info.id,
-      }).then(() => {
+      await Axios.post(
+        "http://localhost:3002/addDoubtAnswer",
+        {
+          doubt_ans: answer,
+          doubtId,
+          replierId: info.id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then(() => {
         setAnswer("");
         alert("successfully answered");
       });

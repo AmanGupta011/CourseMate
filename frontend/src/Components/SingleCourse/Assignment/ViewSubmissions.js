@@ -10,10 +10,19 @@ function ViewSubmissions() {
     location.state;
   const time = deadline.slice(0, 10) + ", " + deadline.slice(-5) + " hr";
   const [studentList, setStudentList] = useState([]);
+  const token = localStorage.getItem("token");
   useEffect(() => {
-    Axios.post("http://localhost:3002/viewStudentAssignmentSubmission", {
-      assignmentId,
-    }).then((res) => {
+    Axios.post(
+      "http://localhost:3002/viewStudentAssignmentSubmission",
+      {
+        assignmentId,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       if (res.data[0].length !== 0) setStudentList(res.data[0]);
     });
   }, []);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useLocation, useHistory } from "react-router-dom";
-import Loading from '../../../Loading';
+import Loading from "../../../Loading";
 import Axios from "axios";
 import "./questionPaper.css";
 import { useGlobalContext } from "../../../context";
@@ -8,6 +8,7 @@ import { useGlobalContext } from "../../../context";
 function AttemptQuiz() {
   const { id, quizId } = useParams();
   const location = useLocation();
+  const token = localStorage.getItem("token");
   const { title, topic, instruction, duration, totalQues, totalMarks } =
     location.state;
   const history = useHistory();
@@ -17,44 +18,62 @@ function AttemptQuiz() {
   const [responseList, setResponseList] = useState(Array(totalQues));
   useEffect(() => {
     setLoading(true);
-    async function getQuizQuestion(){
-      Axios.post("http://localhost:3002/getQues", { quizId }).then((res) => {
-        setQuesList(res.data);
-        setLoading(false);
-      }).catch((err)=>{
-        alert(err);
-        setLoading(false);
-      });
+    async function getQuizQuestion() {
+      Axios.post(
+        "http://localhost:3002/getQues",
+        { quizId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+        .then((res) => {
+          setQuesList(res.data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          alert(err);
+          setLoading(false);
+        });
     }
     getQuizQuestion();
   }, [quizId]);
- 
-  const handleSubmitAns = async(e) => {
+
+  const handleSubmitAns = async (e) => {
     e.preventDefault();
-    const arr=new Array(totalQues);
-    var totalMarksScored=0;
-    quesList.forEach((ques,i)=>{
-       const obj = {};
-       obj["quizId"] = quizId;
-       obj["studentId"] = info.id;
-       obj["questionId"] = ques.questionId;
-       obj["response"] = responseList[i];
-       let marks=0
-       if(responseList[i]){
-         if (ques.answer === responseList[i]) marks += ques.maxScore;
-         else marks+=ques.penaltyScore;
-       }
-       obj["marks"]=marks;
-       arr[i] = obj;
-       totalMarksScored+=marks;
+    const arr = new Array(totalQues);
+    var totalMarksScored = 0;
+    quesList.forEach((ques, i) => {
+      const obj = {};
+      obj["quizId"] = quizId;
+      obj["studentId"] = info.id;
+      obj["questionId"] = ques.questionId;
+      obj["response"] = responseList[i];
+      let marks = 0;
+      if (responseList[i]) {
+        if (ques.answer === responseList[i]) marks += ques.maxScore;
+        else marks += ques.penaltyScore;
+      }
+      obj["marks"] = marks;
+      arr[i] = obj;
+      totalMarksScored += marks;
     });
-    await Axios.post("http://localhost:3002/insertQuizResponse", {
-      arr,
-      quizId,
-      studentId: info.id,
-      score: totalMarksScored,
-      courseId: id,
-    });
+    await Axios.post(
+      "http://localhost:3002/insertQuizResponse",
+      {
+        arr,
+        quizId,
+        studentId: info.id,
+        score: totalMarksScored,
+        courseId: id,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     history.replace(
       `/courses/${id}/quizAttempt/${quizId}/viewScore/${info.id}`
     );
@@ -70,10 +89,8 @@ function AttemptQuiz() {
     // })
   };
 
-
-
-  if(loading){
-    return <Loading/>
+  if (loading) {
+    return <Loading />;
   }
   return (
     <div>
@@ -115,7 +132,6 @@ const Question = ({
   responseList,
   setResponseList,
 }) => {
-  
   return (
     <main>
       <div className="ques-box">

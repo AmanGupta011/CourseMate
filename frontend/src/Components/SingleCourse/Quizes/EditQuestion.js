@@ -1,11 +1,11 @@
-import React,{useState,useEffect} from 'react';
+import React, { useState, useEffect } from "react";
 import { useParams, useLocation, useHistory } from "react-router-dom";
 import Axios from "axios";
 
-
-function EditQuestion(){
-  const history=useHistory();
-  const location=useLocation();
+function EditQuestion() {
+  const history = useHistory();
+  const location = useLocation();
+  const token = localStorage.getItem("token");
   const {
     id,
     quizId,
@@ -27,7 +27,7 @@ function EditQuestion(){
   const [ans, setAns] = useState(answer);
   const [score, setMaxScore] = useState(maxScore);
   const [penalty, setPenaltyScore] = useState(penaltyScore);
-  const [extraOpt, setExtraOpt] = useState([(opt3 !== null), (opt4 !== null)]);
+  const [extraOpt, setExtraOpt] = useState([opt3 !== null, opt4 !== null]);
   var [i, setI] = useState(0);
   const handleAddQues = (e) => {
     e.preventDefault();
@@ -37,10 +37,10 @@ function EditQuestion(){
     setExtraOpt(newOpt);
   };
   useEffect(() => {
-    if(opt3!==null){
-        setI(1);
+    if (opt3 !== null) {
+      setI(1);
     }
-  },[opt3]);
+  }, [opt3]);
   const handleUpdateQues = (e) => {
     e.preventDefault();
     const obj = { questionId };
@@ -54,7 +54,7 @@ function EditQuestion(){
       obj.penaltyScore = penalty;
     }
     if (score !== maxScore) {
-    //   obj.diff=score-maxScore;
+      //   obj.diff=score-maxScore;
       obj.maxScore = score;
     }
     if (option1 !== opt1) {
@@ -69,13 +69,25 @@ function EditQuestion(){
     if (extraOpt[1] === true && option4 !== opt4) {
       obj.opt4 = option4;
     }
-    Axios.post("http://localhost:3002/editQuestion", obj);
-    const diff=score-maxScore;
-    Axios.post("http://localhost:3002/updateTotalMarks",{quizId,diff}).then((res)=>{
-        alert("updated succesfully");
+    Axios.post("http://localhost:3002/editQuestion", obj, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const diff = score - maxScore;
+    Axios.post(
+      "http://localhost:3002/updateTotalMarks",
+      { quizId, diff },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
+      alert("updated succesfully");
     });
   };
-  
+
   return (
     <div className="create-container">
       <form className="quizForm">
@@ -204,7 +216,6 @@ function EditQuestion(){
       </form>
     </div>
   );
-};
+}
 
-
-export default EditQuestion
+export default EditQuestion;

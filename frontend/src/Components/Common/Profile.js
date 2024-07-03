@@ -9,6 +9,7 @@ function Profile() {
     useGlobalContext();
   const [file, setFile] = useState();
   const [fileName, setFileName] = useState("");
+  const token = localStorage.getItem("token");
 
   const saveFile = (e) => {
     setFile(e.target.files[0]);
@@ -28,31 +29,47 @@ function Profile() {
       if (contact) formData.append("contact", contact);
       console.log(formData);
       try {
-        await Axios.post("http://localhost:3002/upload", formData).then(
-          (res) => {
-            alert("Your profile is succesfully updated");
-          }
-        );
+        await Axios.post("http://localhost:3002/upload", formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }).then((res) => {
+          alert("Your profile is succesfully updated");
+        });
       } catch (ex) {
         console.log(ex);
       }
     } else {
-      Axios.post("http://localhost:3002/updateProfile", {
-        id,
-        contact,
-        name,
-      }).then((res) => {
+      Axios.post(
+        "http://localhost:3002/updateProfile",
+        {
+          id,
+          contact,
+          name,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
         alert("Your profile is succesfully updated");
       });
     }
   };
 
   const removePhoto = () => {
-    Axios.post("http://localhost:3002/removePhoto", { id: info.id }).then(
-      (res) => {
-        console.log("succesfully removed");
+    Axios.post(
+      "http://localhost:3002/removePhoto",
+      { id: info.id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    );
+    ).then((res) => {
+      console.log("succesfully removed");
+    });
     setImage(null);
   };
 

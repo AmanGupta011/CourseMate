@@ -4,12 +4,19 @@ import announcementImg from "../../../assets/announcement.png";
 
 function StudentAnnouncement({ id }) {
   const [postAnnouncement, setPostAnnouncement] = useState([]);
+  const token = localStorage.getItem("token");
   useEffect(() => {
-    Axios.post("http://localhost:3002/getAnnouncement", { id: id }).then(
-      (res) => {
-        setPostAnnouncement(res.data);
+    Axios.post(
+      "http://localhost:3002/getAnnouncement",
+      { id: id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    );
+    ).then((res) => {
+      setPostAnnouncement(res.data);
+    });
   }, [id]);
   return (
     <div style={{ textAlign: "center", marginTop: "5em" }}>

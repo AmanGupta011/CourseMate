@@ -1,8 +1,8 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-// const bcrypt = require("bcrypt");
-// const saltRounds = 10;
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const jwt = require("jsonwebtoken");
@@ -56,9 +56,54 @@ app.post("/userReg", (req, res) => {
   user.userRegister(req, res);
 });
 
+const loginVerify = async (req) => {
+  try {
+    const email = req.body.email;
+    const password = req.body.password;
+    const role = req.body.role;
+
+    const result = await knex("user").where({ email, role }).select();
+
+    if (result.length === 0) {
+      return { auth: false, message: "User does not exist" };
+    }
+
+    const user = result[0];
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return { auth: false, message: "Invalid Password" };
+    }
+
+    const token = jwt.sign({ id: user.id }, "JWT_SECRET", {
+      expiresIn: "1h",
+    });
+
+    const obj = {
+      id: user.id,
+      name: user.name,
+      token,
+    };
+
+    req.session.user = obj;
+
+    return {
+      auth: true,
+      token,
+      message: "Successfully logged in",
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    };
+  } catch (error) {
+    console.error(error);
+    throw new Error("Login failed");
+  }
+};
+
 app.post("/userVerification", (req, res) => {
-  user
-    .loginVerify(req)
+  loginVerify(req)
     .then((result) => {
       // req.session.user = result;
       // res.cookie("user_sid", req.sessionID, { httpOnly: true, secure: false });
@@ -78,13 +123,20 @@ app.get("/userVerification", (req, res) => {
 });
 
 // Middleware to check if user is authenticated
-const isAuthenticated = (req, res, next) => {
-  if (req.session.user && req.cookies.user_sid) {
-    next();
-  } else {
-    res.status(401).json({ success: false, message: "Unauthorized" });
-    res.redirect("/");
+const authenticateToken = (req, res, next) => {
+  const token = req.headers.authorization;
+  if (!token) {
+    return res.status(403).json({ message: "No token provided" });
   }
+
+  jwt.verify(token.split(" ")[1], "JWT_SECRET", (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: "Failed to authenticate token" });
+    }
+
+    req.user = decoded;
+    next();
+  });
 };
 
 const verifyJWT = (req, res, next) => {
@@ -93,7 +145,7 @@ const verifyJWT = (req, res, next) => {
   if (!token) {
     res.send("We need a token please give us next time!");
   } else {
-    jwt.verify(token, process.env.JWT_secret, (err, decoded) => {
+    jwt.verify(token, "JWT_SECRET", (err, decoded) => {
       if (err) {
         res.json({
           auth: false,
@@ -152,17 +204,17 @@ const upload = multer({
   storage: storage,
 });
 
-app.post("/getProfile", (req, res) => {
+app.post("/getProfile", authenticateToken, (req, res) => {
   profile.getProfile(req).then((result) => {
     res.send(result);
     // //console.log(result)
   });
 });
-app.post("/removePhoto", (req, res) => {
+app.post("/removePhoto", authenticateToken, (req, res) => {
   profile.removePhoto(req);
 });
 
-app.post("/upload", upload.single("file"), (req, res) => {
+app.post("/upload", authenticateToken, upload.single("file"), (req, res) => {
   // console.log(req.file);
   // console.log(req.body.id);
   let imgsrc = "http://localhost:3002/images/" + req.file.filename;
@@ -179,7 +231,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
       res.send("updated");
     });
 });
-app.post("/updateProfile", (req, res) => {
+app.post("/updateProfile", authenticateToken, (req, res) => {
   knex("user")
     .where({ id: req.body.id })
     .update({
@@ -206,21 +258,26 @@ const storage2 = multer.diskStorage({
 const upload2 = multer({
   storage: storage2,
 });
-app.post("/uploadFile", upload2.single("file"), (req, res) => {
-  // console.log(req.file);
-  let fileSrc = "http://localhost:3002/file/" + req.file.filename;
-  knex("file")
-    .insert({
-      courseId: req.body.courseId,
-      file: fileSrc,
-      file_name: req.body.fileName,
-    })
-    .then((result) => {
-      //console.log(result)
-      console.log("file uploaded");
-      res.send("ok");
-    });
-});
+app.post(
+  "/uploadFile",
+  authenticateToken,
+  upload2.single("file"),
+  (req, res) => {
+    // console.log(req.file);
+    let fileSrc = "http://localhost:3002/file/" + req.file.filename;
+    knex("file")
+      .insert({
+        courseId: req.body.courseId,
+        file: fileSrc,
+        file_name: req.body.fileName,
+      })
+      .then((result) => {
+        //console.log(result)
+        console.log("file uploaded");
+        res.send("ok");
+      });
+  }
+);
 
 app.get("/getFile", (req, res) => {
   knex("file")
@@ -244,37 +301,42 @@ const storage3 = multer.diskStorage({
 const upload3 = multer({
   storage: storage3,
 });
-app.post("/uploadAssignment", upload3.single("file"), (req, res) => {
-  let fileSrc = "http://localhost:3002/assignments/" + req.file.filename;
-  knex("assignment")
-    .insert({
-      courseId: req.body.courseId,
-      file: fileSrc,
-      fileName: req.body.fileName,
-      title: req.body.title,
-      topic: req.body.topic,
-      deadline: req.body.deadline,
-    })
-    .then((result) => {
-      //console.log(result)
-      console.log("file uploaded");
-      res.send("done");
-    });
-});
+app.post(
+  "/uploadAssignment",
+  authenticateToken,
+  upload3.single("file"),
+  (req, res) => {
+    let fileSrc = "http://localhost:3002/assignments/" + req.file.filename;
+    knex("assignment")
+      .insert({
+        courseId: req.body.courseId,
+        file: fileSrc,
+        fileName: req.body.fileName,
+        title: req.body.title,
+        topic: req.body.topic,
+        deadline: req.body.deadline,
+      })
+      .then((result) => {
+        //console.log(result)
+        console.log("file uploaded");
+        res.send("done");
+      });
+  }
+);
 
-app.post("/getAssignments", (req, res) => {
+app.post("/getAssignments", authenticateToken, (req, res) => {
   knex("assignment")
     .select()
     .where({ courseId: req.body.id })
     .then((result) => res.send(result));
 });
-app.post("/getAttemptedAssignments", (req, res) => {
+app.post("/getAttemptedAssignments", authenticateToken, (req, res) => {
   const query = `select asg.assignmentId, asg.courseId, asg.file, asg.fileName, title, topic, deadline from assignment as asg,assignment_submission as ass where asg.assignmentId=ass.assignmentId and asg.courseId=${req.body.id} and studentId=${req.body.studentId}`;
   knex.raw(query).then((result) => {
     res.send(result);
   });
 });
-app.post("/getUnAttemptedAssignments", (req, res) => {
+app.post("/getUnAttemptedAssignments", authenticateToken, (req, res) => {
   const query = `select * from assignment where assignmentId not in (select assignmentId from assignment_submission where studentId=${req.body.studentId}) and courseId=${req.body.id}`;
   knex.raw(query).then((result) => {
     res.send(result);
@@ -295,29 +357,34 @@ const storage4 = multer.diskStorage({
 const upload4 = multer({
   storage: storage4,
 });
-app.post("/uploadMyAssignment", upload4.single("file"), (req, res) => {
-  console.log(req.file);
-  let fileSrc =
-    "http://localhost:3002/StudentAssignmentSubmission/" + req.file.filename;
-  knex("assignment_submission")
-    .insert({
-      courseId: req.body.courseId,
-      studentId: req.body.studentId,
-      assignmentId: req.body.assignmentId,
-      file: fileSrc,
-      fileName: req.body.fileName,
-      roll: req.body.roll,
-      comment: req.body.comment,
-      late: req.body.late,
-    })
-    .then((result) => {
-      //console.log(result)
-      console.log("file uploaded");
-      res.send("hi");
-    });
-});
+app.post(
+  "/uploadMyAssignment",
+  authenticateToken,
+  upload4.single("file"),
+  (req, res) => {
+    console.log(req.file);
+    let fileSrc =
+      "http://localhost:3002/StudentAssignmentSubmission/" + req.file.filename;
+    knex("assignment_submission")
+      .insert({
+        courseId: req.body.courseId,
+        studentId: req.body.studentId,
+        assignmentId: req.body.assignmentId,
+        file: fileSrc,
+        fileName: req.body.fileName,
+        roll: req.body.roll,
+        comment: req.body.comment,
+        late: req.body.late,
+      })
+      .then((result) => {
+        //console.log(result)
+        console.log("file uploaded");
+        res.send("hi");
+      });
+  }
+);
 
-app.post("/deleteMyAssignment", (req, res) => {
+app.post("/deleteMyAssignment", authenticateToken, (req, res) => {
   knex("assignment_submission")
     .where({ assignmentId: req.body.assignmentId })
     .del()
@@ -328,7 +395,7 @@ app.post("/deleteMyAssignment", (req, res) => {
     });
 });
 
-app.post("/getMyAssignments", (req, res) => {
+app.post("/getMyAssignments", authenticateToken, (req, res) => {
   knex("assignment_submission")
     .where({
       assignmentId: req.body.assignmentId,
@@ -341,7 +408,7 @@ app.post("/getMyAssignments", (req, res) => {
     });
 });
 
-app.post("/viewStudentAssignmentSubmission", (req, res) => {
+app.post("/viewStudentAssignmentSubmission", authenticateToken, (req, res) => {
   const query = `select file,fileName,comment,roll,late,name,photo,assignment_submissionId from assignment_submission as ass, user where ass.studentId=user.id and user.role='Student' and ass.assignmentId=${req.body.assignmentId}`;
   knex
     .raw(query)
@@ -356,7 +423,7 @@ app.post("/viewStudentAssignmentSubmission", (req, res) => {
 /********************************** */
 // Add new course
 
-app.post("/publishCourse", (req, res) => {
+app.post("/publishCourse", authenticateToken, (req, res) => {
   knex("courses")
     .insert({
       courseName: req.body.courseName,
@@ -393,7 +460,7 @@ app.get("/getCourseList", (req, res) => {
     });
 });
 
-app.post("/enrollMe", (req, res) => {
+app.post("/enrollMe", authenticateToken, (req, res) => {
   knex("studies")
     .insert({
       studentId: req.body.studentId,
@@ -406,7 +473,7 @@ app.post("/enrollMe", (req, res) => {
     });
 });
 
-app.post("/getMyCourses", (req, res) => {
+app.post("/getMyCourses", authenticateToken, (req, res) => {
   knex("courses")
     .join("studies", "courses.courseId", "=", "studies.courseId")
     .where({ studentId: req.body.id })
@@ -426,7 +493,7 @@ app.post("/getMyCourses", (req, res) => {
     });
 });
 
-app.post("/getTeacherCourse", (req, res) => {
+app.post("/getTeacherCourse", authenticateToken, (req, res) => {
   knex("courses")
     .select("courseId", "courseName", "credits", "bio", "prerequisite")
     .where({ teacherId: req.body.id })
@@ -438,7 +505,7 @@ app.post("/getTeacherCourse", (req, res) => {
 
 /***************************************************/
 //Announcement
-app.post("/createAnnouncement", (req, res) => {
+app.post("/createAnnouncement", authenticateToken, (req, res) => {
   knex("announce")
     .insert({
       courseId: req.body.id,
@@ -450,7 +517,7 @@ app.post("/createAnnouncement", (req, res) => {
     });
 });
 
-app.post("/getAnnouncement", (req, res) => {
+app.post("/getAnnouncement", authenticateToken, (req, res) => {
   // console.log(req.body.id);
   knex("announce")
     .select()
@@ -463,7 +530,7 @@ app.post("/getAnnouncement", (req, res) => {
 
 /************************************ */
 // Quiz
-app.post("/createQuizInfo", (req, res) => {
+app.post("/createQuizInfo", authenticateToken, (req, res) => {
   knex("quiz")
     .insert({
       courseId: req.body.id,
@@ -482,7 +549,7 @@ app.post("/createQuizInfo", (req, res) => {
         });
     });
 });
-app.post("/getQuizInfo", (req, res) => {
+app.post("/getQuizInfo", authenticateToken, (req, res) => {
   knex("quiz")
     .where({ quizId: req.body.quizId })
     .select()
@@ -490,7 +557,7 @@ app.post("/getQuizInfo", (req, res) => {
       res.send(result);
     });
 });
-app.post("/getAllQuizes", (req, res) => {
+app.post("/getAllQuizes", authenticateToken, (req, res) => {
   knex("quiz")
     .where({ courseId: req.body.id })
     .select()
@@ -498,13 +565,13 @@ app.post("/getAllQuizes", (req, res) => {
       res.send(result);
     });
 });
-app.post("/getUnattemptedQuizes", (req, res) => {
+app.post("/getUnattemptedQuizes", authenticateToken, (req, res) => {
   const query = `select * from quiz where quizId not in (select quizId from grade where studentId=${req.body.studentId}) and courseId=${req.body.id}`;
   knex.raw(query).then((result) => {
     res.send(result);
   });
 });
-app.post("/getAttemptedQuizes", (req, res) => {
+app.post("/getAttemptedQuizes", authenticateToken, (req, res) => {
   const query = `select quiz.quizId, studentId, score, title, duration, topic, totalQues, totalMarks from quiz,grade where quiz.quizId=grade.quizId and courseId=${req.body.id} and studentId=${req.body.studentId}`;
   knex.raw(query).then((result) => {
     res.send(result);
@@ -519,7 +586,7 @@ app.post("/getAttemptedQuizes", (req, res) => {
 //     // res.send(result);
 //   })
 // })
-app.post("/addQues", (req, res) => {
+app.post("/addQues", authenticateToken, (req, res) => {
   knex("quiz_question")
     .insert(req.body)
     .then((result) => {
@@ -539,7 +606,7 @@ app.post("/addQues", (req, res) => {
     .catch((err) => console.log(err));
 });
 
-app.post("/getQues", (req, res) => {
+app.post("/getQues", authenticateToken, (req, res) => {
   // console.log(req.body);
   knex("quiz_question")
     .where({ quizId: req.body.quizId })
@@ -549,7 +616,7 @@ app.post("/getQues", (req, res) => {
     })
     .catch((err) => console.log(err));
 });
-app.post("/editQuestion", (req, res) => {
+app.post("/editQuestion", authenticateToken, (req, res) => {
   knex("quiz_question")
     .where({ questionId: req.body.questionId })
     .update(req.body)
@@ -558,7 +625,7 @@ app.post("/editQuestion", (req, res) => {
     })
     .catch((err) => console.log(err));
 });
-app.post("/updateTotalMarks", (req, res) => {
+app.post("/updateTotalMarks", authenticateToken, (req, res) => {
   knex("quiz")
     .where({ quizId: req.body.quizId })
     .increment({ totalMarks: req.body.diff })
@@ -577,7 +644,7 @@ app.post("/updateTotalMarks", (req, res) => {
 //       console.log("succesfuly deleted");
 //     });
 // });
-app.post("/deleteQues", (req, res) => {
+app.post("/deleteQues", authenticateToken, (req, res) => {
   console.log("hi server trying to delete");
   knex("quiz_question")
     .where({ questionId: req.body.questionId })
@@ -598,7 +665,7 @@ app.post("/deleteQues", (req, res) => {
     });
 });
 
-app.post("/updateMaxScore", (req, res) => {
+app.post("/updateMaxScore", authenticateToken, (req, res) => {
   knex("quiz_question")
     .where({ questionId: req.body.questionId })
     .update("maxScore", req.body.score)
@@ -615,7 +682,7 @@ app.post("/updateMaxScore", (req, res) => {
         });
     });
 });
-app.post("/updatePenaltyScore", (req, res) => {
+app.post("/updatePenaltyScore", authenticateToken, (req, res) => {
   knex("quiz_question")
     .where({ questionId: req.body.questionId })
     .update("penaltyScore", req.body.penaltyScore)
@@ -623,7 +690,7 @@ app.post("/updatePenaltyScore", (req, res) => {
       //console.log(result)
     });
 });
-app.post("/deleteQuiz", (req, res) => {
+app.post("/deleteQuiz", authenticateToken, (req, res) => {
   knex("quiz")
     .where({ quizId: req.body.quizId })
     .del()
@@ -633,7 +700,7 @@ app.post("/deleteQuiz", (req, res) => {
     });
 });
 
-app.post("/insertQuizResponse", (req, res) => {
+app.post("/insertQuizResponse", authenticateToken, (req, res) => {
   knex("quiz_response")
     .insert(req.body.arr)
     .then((result) => {
@@ -650,7 +717,7 @@ app.post("/insertQuizResponse", (req, res) => {
     });
 });
 
-app.post("/getScoreAndResponse", (req, res) => {
+app.post("/getScoreAndResponse", authenticateToken, (req, res) => {
   // knex("quiz_response AS qr").join("quiz_question As qq").on('qr.quizId','=','qq.quizId').andOn('qr.questionId','=','qq.questionId').andOn('qr.studentId','=',req.body.studentId).andOn('qr.quizId','=',req.body.quizId).select('questionName,maxScore,penaltyScore,answer,opt1,opt2,opt3,opt4,qq.questionId,response,marks')
   const query = `select questionName,maxScore,penaltyScore,answer,opt1,opt2,opt3,opt4,qq.questionId,response,marks from quiz_response AS qr, quiz_question As qq where qr.quizId = qq.quizId and qr.questionId = qq.questionId and qr.studentId=${req.body.studentId} and qq.quizId=${req.body.quizId}`;
   // console.log(query);
@@ -659,7 +726,7 @@ app.post("/getScoreAndResponse", (req, res) => {
     res.send(result);
   });
 });
-app.post("/getGrade", (req, res) => {
+app.post("/getGrade", authenticateToken, (req, res) => {
   knex
     .raw(
       `select title,duration,topic,totalQues,totalMarks,score from quiz,grade where quiz.quizId=grade.quizid and studentId=${req.body.studentId} and quiz.quizId=${req.body.quizId}`
@@ -672,7 +739,7 @@ app.post("/getGrade", (req, res) => {
 
 /*******************************************/
 //Doubt
-app.post("/askDoubt", (req, res) => {
+app.post("/askDoubt", authenticateToken, (req, res) => {
   knex("doubt")
     .insert(req.body)
     .then((result) => {
@@ -699,7 +766,7 @@ app.get("/getDoubtList", (req, res) => {
     });
 });
 
-app.post("/addDoubtAnswer", (req, res) => {
+app.post("/addDoubtAnswer", authenticateToken, (req, res) => {
   knex("doubt_ans")
     .insert(req.body)
     .then((result) => {
@@ -707,7 +774,7 @@ app.post("/addDoubtAnswer", (req, res) => {
       res.send("done");
     });
 });
-app.post("/getDoubtAnswers", (req, res) => {
+app.post("/getDoubtAnswers", authenticateToken, (req, res) => {
   const query = `select name,photo,doubt_ans,doubt_ansId from doubt_ans as ds, user where ds.replierId=user.id and doubtId=${req.body.doubtId}`;
   knex
     .raw(query)

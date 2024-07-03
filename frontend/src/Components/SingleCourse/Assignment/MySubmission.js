@@ -8,6 +8,7 @@ function MySubmission() {
   const { courseId } = useParams();
   const location = useLocation();
   const { info } = useGlobalContext();
+  const token = localStorage.getItem("token");
   const { assignmentId, assignFile, assignFileName, title, topic, deadline } =
     location.state;
   // const time = deadline.slice(0, 10) + ", " + deadline.slice(-5);
@@ -22,10 +23,18 @@ function MySubmission() {
     ":00";
   const [myAssign, setMyAssign] = useState({});
   async function getMyfile() {
-    await Axios.post("http://localhost:3002/getMyAssignments", {
-      assignmentId,
-      studentId: info.id,
-    }).then((res) => {
+    await Axios.post(
+      "http://localhost:3002/getMyAssignments",
+      {
+        assignmentId,
+        studentId: info.id,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       setMyAssign(res.data[0]);
       if (res.data.length !== 0) {
         setMessage(`Turned In ${res.data[0].late === 1 ? "late" : ""} `);
@@ -60,10 +69,11 @@ function MySubmission() {
     formData.append("studentId", info.id);
     formData.append("late", late);
     try {
-      await Axios.post(
-        "http://localhost:3002/uploadMyAssignment",
-        formData
-      ).then(async (res) => {
+      await Axios.post("http://localhost:3002/uploadMyAssignment", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }).then(async (res) => {
         await getMyfile();
         console.log("late" + late);
         setMessage(`Turned In ${late === 1 ? "late" : ""} `);
@@ -81,9 +91,17 @@ function MySubmission() {
   /**************************************/
   const deleteFile = async (e) => {
     e.preventDefault();
-    await Axios.post("http://localhost:3002/deleteMyAssignment", {
-      assignmentId,
-    }).then((res) => {
+    await Axios.post(
+      "http://localhost:3002/deleteMyAssignment",
+      {
+        assignmentId,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       setMessage("Turn In");
       setOpt(submit);
       setRoll("");

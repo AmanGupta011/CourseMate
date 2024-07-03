@@ -30,6 +30,7 @@ const Login = ({ setLoginStatus }) => {
               role: response.data.role,
             };
             localStorage.setItem("info", JSON.stringify(infoObj));
+            localStorage.setItem("token", infoObj.token);
             setLoginStatus(response.data.auth);
           } else {
             alert("Wrong email or password or check your role!!");

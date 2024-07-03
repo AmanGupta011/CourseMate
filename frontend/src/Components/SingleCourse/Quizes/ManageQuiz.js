@@ -7,6 +7,7 @@ function ManageQuiz() {
   // const location=useLocation();
   // console.log(location.state);
   // const {title,topic,instruction,duration}=location.state;
+  const token = localStorage.getItem("token");
   const [title, setTitle] = useState("Exam");
   const [instruction, setInstruction] = useState("Instruction");
   const [duration, setDuration] = useState("00:00");
@@ -19,7 +20,15 @@ function ManageQuiz() {
     setIsCreateQuesClicked(true);
   };
   function getNewQues() {
-    Axios.post("http://localhost:3002/getQues", { quizId }).then((res) => {
+    Axios.post(
+      "http://localhost:3002/getQues",
+      { quizId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       setQuesList(res.data);
       console.log(res.data);
     });
@@ -28,7 +37,15 @@ function ManageQuiz() {
     getNewQues();
   }, []);
   function getNewQuizInfo() {
-    Axios.post("http://localhost:3002/getQuizInfo", { quizId }).then((res) => {
+    Axios.post(
+      "http://localhost:3002/getQuizInfo",
+      { quizId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       setTitle(res.data[0].title);
       setDuration(res.data[0].duration);
       setTitle(res.data[0].title);
@@ -96,12 +113,12 @@ function ManageQuiz() {
         );
       })}
       <button className="opt-val-btn">
-        <Link to={
-              {
-                pathname:`/courses/${id}`,
-                
-              }}
-              className="link-btn">
+        <Link
+          to={{
+            pathname: `/courses/${id}`,
+          }}
+          className="link-btn"
+        >
           Publish
         </Link>
       </button>
@@ -124,22 +141,31 @@ const SingleQuestion = ({
   opt4,
   answer,
 }) => {
-  const [score,setScore]=useState(maxScore);
-  const [scoreHelper,setScoreHelper]=useState(maxScore);
-  const [penalty,setPenalty]=useState(penaltyScore);
+  const [score, setScore] = useState(maxScore);
+  const [scoreHelper, setScoreHelper] = useState(maxScore);
+  const [penalty, setPenalty] = useState(penaltyScore);
+  const token = localStorage.getItem("token");
   const handleDelete = () => {
     // Axios.delete(`http://localhost:3002/deleteQues"/${questionId}`);
     // Axios.delete("http://localhost:3002/deleteQues",{data:{quizId:quizId,questionId:questionId}});
-    Axios.post(`http://localhost:3002/deleteQues`, {
-      questionId,
-      quizId,
-      maxScore,
-    }).then((res) => {
+    Axios.post(
+      `http://localhost:3002/deleteQues`,
+      {
+        questionId,
+        quizId,
+        maxScore,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       getNewQues();
       getNewQuizInfo();
     });
   };
- 
+
   const handleMaxScore = (e) => {
     if (e.target.value !== "") {
       // console.log(e.target.value);
@@ -149,28 +175,43 @@ const SingleQuestion = ({
       setScore(e.target.value);
       setScoreHelper(e.target.value);
       console.log(score);
-      Axios.post("http://localhost:3002/updateMaxScore", {
-        questionId,
-        score: e.target.value,
-        quizId,
-        diff,
-      }).then((res) => {
+      Axios.post(
+        "http://localhost:3002/updateMaxScore",
+        {
+          questionId,
+          score: e.target.value,
+          quizId,
+          diff,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
         getNewQuizInfo();
       });
-    }
-    else{
+    } else {
       setScore(e.target.value);
     }
   };
-  const handlePenaltyScore=(e)=>{
+  const handlePenaltyScore = (e) => {
     setPenalty(e.target.value);
     if (e.target.value !== "") {
-      Axios.post("http://localhost:3002/updatePenaltyScore", {
-        questionId,
-        penaltyScore: e.target.value,
-      });
+      Axios.post(
+        "http://localhost:3002/updatePenaltyScore",
+        {
+          questionId,
+          penaltyScore: e.target.value,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
     }
-  }
+  };
   return (
     <div className="ques-container">
       <div className="single-ques">
@@ -251,6 +292,7 @@ const CreateQuestion = ({
   const [maxScore, setMaxScore] = useState(4);
   const [penaltyScore, setPenaltyScore] = useState(0);
   const [extraOpt, setExtraOpt] = useState([0, 0]);
+  const token = localStorage.getItem("token");
   var [i, setI] = useState(0);
   const handleAddQues = (e) => {
     e.preventDefault();
@@ -279,13 +321,17 @@ const CreateQuestion = ({
     }
     // setTotalQues(totalQues + 1);
     // setTotalMarks(totalMarks + maxScore);
-    Axios.post("http://localhost:3002/addQues", obj).then((res) => {
+    Axios.post("http://localhost:3002/addQues", obj, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then((res) => {
       setIsCreateQuesClicked(false);
       getNewQues();
       getNewQuizInfo();
     });
   };
-  
+
   return (
     <div className="create-container">
       <form className="quizForm">

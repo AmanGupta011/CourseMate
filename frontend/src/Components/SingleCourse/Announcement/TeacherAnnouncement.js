@@ -4,16 +4,24 @@ import Axios from "axios";
 function TeacherAnnouncement({ id }) {
   const [announcement, setAnnouncement] = useState("");
   const [postAnnouncement, setPostAnnouncement] = useState([]);
+  const token = localStorage.getItem("token");
+
   const getAllAnnouncement = () => {
-    Axios.post("http://localhost:3002/getAnnouncement", { id: id }).then(
-      (res) => {
-        //    const newAnnouncements=[]
-        //    res.data.forEach((announce)=>{
-        //      newAnnouncements.push(announce.announcement);
-        //    })
-        setPostAnnouncement(res.data);
+    Axios.post(
+      "http://localhost:3002/getAnnouncement",
+      { id: id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    );
+    ).then((res) => {
+      //    const newAnnouncements=[]
+      //    res.data.forEach((announce)=>{
+      //      newAnnouncements.push(announce.announcement);
+      //    })
+      setPostAnnouncement(res.data);
+    });
   };
   useEffect(() => {
     getAllAnnouncement();
@@ -24,10 +32,19 @@ function TeacherAnnouncement({ id }) {
     if (announcement === "") {
       alert("Empty announcement cannot be posted");
     } else {
-      Axios.post("http://localhost:3002/createAnnouncement", {
-        id,
-        announcement,
-      }).then((res) => {
+      console.log(token);
+      Axios.post(
+        "http://localhost:3002/createAnnouncement",
+        {
+          id,
+          announcement,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      ).then((res) => {
         console.log(res);
         alert("successfully created announcement!");
         setAnnouncement("");

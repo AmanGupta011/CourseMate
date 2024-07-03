@@ -58,9 +58,11 @@ const loginVerify = (req) => {
               const id = result[0].id;
               const name = result[0].name;
               console.log(role);
-              const token = jwt.sign({ id }, process.env.JWT_secret, {
-                expiresIn: 3000,
+              const token = jwt.sign({ id: id }, process.env.JWT_secret, {
+                expiresIn: "1h",
               });
+              console.log("ttooken");
+              console.log(token);
               const obj = {
                 id,
                 name,

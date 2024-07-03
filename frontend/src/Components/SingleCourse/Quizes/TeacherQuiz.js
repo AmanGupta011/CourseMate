@@ -3,51 +3,79 @@ import Axios from "axios";
 import { Link } from "react-router-dom";
 import quizImg from "../../../assets/quiz.png";
 
-function TeacherQuiz({id}) {
-  const [quizList,setQuizList]=useState([]);
+function TeacherQuiz({ id }) {
+  const [quizList, setQuizList] = useState([]);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    Axios.post("http://localhost:3002/getAllQuizes", { id }).then((res) => {
+    Axios.post(
+      "http://localhost:3002/getAllQuizes",
+      { id },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
       setQuizList(res.data.reverse());
     });
   }, [id, quizList]);
 
-  
-    return (
-      <div className="quiz">
-        <div className="enroll">
-          <button className="btn btn-quiz">
-            <Link to={`/courses/${id}/quiz`} className="link-btn">
-              <i className="bi bi-plus-lg"></i>Add Quiz
-            </Link>
-          </button>
-        </div>
-
-        <div className="showQuiz">
-          {quizList.length===0 &&(
-        <div className="no-item">
-          <h2>No quizes has been posted </h2>
-          <div>
-            <img
-              style={{ height: "65vh", width: "40vw" }}
-              src={quizImg}
-              alt="quizphoto"
-            />
-          </div>
-        </div>
-      )}
-          {quizList.length!==0 && <div className="heading">Previous Quizes</div>}
-          {quizList.map((quiz)=>{
-            return <SingleQuiz key={quiz.quizId} {...quiz}/>
-          })}
-        </div>
+  return (
+    <div className="quiz">
+      <div className="enroll">
+        <button className="btn btn-quiz">
+          <Link to={`/courses/${id}/quiz`} className="link-btn">
+            <i className="bi bi-plus-lg"></i>Add Quiz
+          </Link>
+        </button>
       </div>
-    );
+
+      <div className="showQuiz">
+        {quizList.length === 0 && (
+          <div className="no-item">
+            <h2>No quizes has been posted </h2>
+            <div>
+              <img
+                style={{ height: "65vh", width: "40vw" }}
+                src={quizImg}
+                alt="quizphoto"
+              />
+            </div>
+          </div>
+        )}
+        {quizList.length !== 0 && (
+          <div className="heading">Previous Quizes</div>
+        )}
+        {quizList.map((quiz) => {
+          return <SingleQuiz key={quiz.quizId} {...quiz} />;
+        })}
+      </div>
+    </div>
+  );
 }
-const SingleQuiz = ({ quizId,courseId, title, topic, instruction, duration, totalQues,totalMarks }) => {
+const SingleQuiz = ({
+  quizId,
+  courseId,
+  title,
+  topic,
+  instruction,
+  duration,
+  totalQues,
+  totalMarks,
+}) => {
   const handleDelete = () => {
-    Axios.post("http://localhost:3002/deleteQuiz", { quizId }).then((res)=>{
-      alert('deleted successfuly');
+    const token = localStorage.getItem("token");
+    Axios.post(
+      "http://localhost:3002/deleteQuiz",
+      { quizId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ).then((res) => {
+      alert("deleted successfuly");
     });
   };
   return (
@@ -71,11 +99,8 @@ const SingleQuiz = ({ quizId,courseId, title, topic, instruction, duration, tota
           Edit
         </Link>
       </button>
-      <i
-        className="bi bi-trash del-quiz"
-        onClick={handleDelete}
-      ></i>
+      <i className="bi bi-trash del-quiz" onClick={handleDelete}></i>
     </div>
   );
 };
-export default TeacherQuiz
+export default TeacherQuiz;
