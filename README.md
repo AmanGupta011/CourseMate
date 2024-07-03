@@ -15,7 +15,7 @@ CourseMate is a comprehensive Learning Management System designed to facilitate 
 1. **Clone Repository**
 
 ```bash
-https://github.com/AmanGupta011/Learning-System.git
+git clone https://github.com/AmanGupta011/Learning-System.git
 cd Learning-System/backend
 ```
 
